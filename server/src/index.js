@@ -1,0 +1,183 @@
+/**
+ * Main Application Server (index.js)
+ * Mounts all Express middleware, routes, handles Socket.IO events, and
+ * boots background simulations.
+ */
+'use strict';
+
+const express = require('express');
+const cors = require('cors');
+const http = require('http');
+const socketIo = require('socket.io');
+
+const config = require('./config');
+const db = require('./db');
+const { rateLimit } = require('./middleware/rateLimit');
+
+// Routes
+const authRouter = require('./routes/auth');
+const chatRouter = require('./routes/chat');
+const alertsRouter = require('./routes/alerts');
+const crowdRouter = require('./routes/crowd');
+const navigationRouter = require('./routes/navigation');
+const recommendRouter = require('./routes/recommend');
+const notifyRouter = require('./routes/notify');
+
+// Services
+const alertEngine = require('./services/alertEngine');
+const crowdAnalytics = require('./services/crowdAnalytics');
+
+// Simulators
+const sensorSimulator = require('./simulators/sensorSimulator');
+const alertSimulator = require('./simulators/alertSimulator');
+
+// Initialize express app
+const app = express();
+const server = http.createServer(app);
+
+// Configure Cors
+const corsOptions = {
+  origin: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+app.use(express.json());
+
+// Apply rate limiting (Section 3.4 max concurrent users / protection)
+app.use(rateLimit({ windowMs: 60000, maxRequests: 150 }));
+
+// Health Check
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'UP',
+    timestamp: new Date().toISOString(),
+    config: {
+      ai_timeout_ms: config.AI_MODEL_TIMEOUT_MS,
+      max_concurrent_users: config.MAX_CONCURRENT_USERS
+    }
+  });
+});
+
+// Mount routes
+app.use('/api/auth', authRouter);
+app.use('/api/chat', chatRouter);
+app.use('/api/alerts', alertsRouter);
+app.use('/api/crowd', crowdRouter);
+app.use('/api/navigate', navigationRouter);
+app.use('/api/recommendations', recommendRouter);
+app.use('/api/notifications', notifyRouter);
+
+// Set up Socket.IO
+const io = socketIo(server, {
+  cors: corsOptions
+});
+app.set('io', io);
+
+// Namespaces
+const fanNamespace = io.of('/fan');
+const dashboardNamespace = io.of('/dashboard');
+
+// Track connected users
+const connectedFans = new Map(); // socket.id -> userId
+const connectedStaff = new Map(); // socket.id -> userId
+
+fanNamespace.on('connection', (socket) => {
+  console.log(`[Socket.IO] Fan connected: ${socket.id}`);
+
+  socket.on('authenticate', (token) => {
+    // Basic decode of JWT to subscribe user to their room
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, config.JWT_SECRET);
+      const userId = decoded.id;
+      connectedFans.set(socket.id, userId);
+      socket.join(userId);
+      console.log(`[Socket.IO] Fan authenticated: ${userId} for socket: ${socket.id}`);
+    } catch (err) {
+      console.error('[Socket.IO] Authentication failed:', err.message);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    connectedFans.delete(socket.id);
+    console.log(`[Socket.IO] Fan disconnected: ${socket.id}`);
+  });
+});
+
+dashboardNamespace.on('connection', (socket) => {
+  console.log(`[Socket.IO] Dashboard operator connected: ${socket.id}`);
+
+  socket.on('authenticate', (token) => {
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, config.JWT_SECRET);
+      if (decoded.role === 'staff' || decoded.role === 'admin') {
+        const userId = decoded.id;
+        connectedStaff.set(socket.id, userId);
+        socket.join('operators');
+        console.log(`[Socket.IO] Staff/Admin connected to operators room: ${userId}`);
+      }
+    } catch (err) {
+      console.error('[Socket.IO] Operator authentication failed:', err.message);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    connectedStaff.delete(socket.id);
+    console.log(`[Socket.IO] Dashboard operator disconnected: ${socket.id}`);
+  });
+});
+
+// Wire up the Alert Engine callback to emit alerts to operators
+alertEngine.init((alertEvent) => {
+  console.log(`[AlertEngine] New Alert Published: [${alertEvent.severity.toUpperCase()}] ${alertEvent.message}`);
+  
+  // Publish to operators
+  dashboardNamespace.to('operators').emit('alert:new', alertEvent);
+  
+  // If it is critical, send a notification to fans in that zone (FR-07)
+  if (alertEvent.severity === 'critical' || alertEvent.severity === 'high') {
+    const notification = {
+      id: alertEvent.alert_id,
+      user_id: '*', // Broadcast
+      type: 'emergency',
+      severity: alertEvent.severity,
+      message: `Emergency Alert in ${alertEvent.zone_id.toUpperCase()}: ${alertEvent.message}`,
+      timestamp: new Date().toISOString()
+    };
+    db.addNotification(notification);
+    fanNamespace.emit('notification:new', notification);
+  }
+});
+
+// Start simulations and wire sensor inputs to crowd analytics & alert engine
+sensorSimulator.start((crowdEvent) => {
+  // Emit to all connected clients
+  fanNamespace.emit('crowd:density', crowdEvent);
+  dashboardNamespace.emit('crowd:density', crowdEvent);
+
+  // Send to alert engine to check for critical congestion thresholds (FR-02)
+  alertEngine.processCrowdEvent(crowdEvent);
+});
+
+// Start alert generator simulator
+alertSimulator.start();
+
+// Start HTTP Server
+const PORT = config.PORT;
+server.listen(PORT, () => {
+  console.log(`
+┌────────────────────────────────────────────────────────┐
+│                                                        │
+│   StadiumAI Operational Monolith Server                │
+│   Serving FIFA World Cup 2026 Operations               │
+│   Port: ${PORT}                                           │
+│                                                        │
+└────────────────────────────────────────────────────────┘
+  `);
+});
+
+module.exports = { app, server };

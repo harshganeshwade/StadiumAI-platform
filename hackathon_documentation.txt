@@ -1,0 +1,66 @@
+STADIUMAI - HACKATHON DOCUMENTATION & PROJECT LOG
+========================================================================
+
+This document outlines the design history, tool justifications, prompt engineering 
+evolution, and task division between GenAI models and human inputs for the StadiumAI project.
+
+------------------------------------------------------------------------
+1. TOOLS & TECHNOLOGY STACK USED
+------------------------------------------------------------------------
+* Frontend (Fan App): React (Vite, JavaScript, TailwindCSS/Vanilla CSS styles, Framer Motion)
+* Frontend (Operations Dashboard): React (Vite, JavaScript, CSS modules, Recharts, Lucide-react)
+* Backend Server: Node.js (Express, Socket.IO, JWT Auth, Bcrypt, UUID)
+* Database Layer: In-memory JavaScript Data Store (Pre-seeded mockup DB)
+* GenAI Development Partners: 
+  - ChatGPT: Initial PRD/TRD brainstorming and requirements gathering.
+  - Claude Opus: Architectural re-design, consistency verification, and documentation consolidation.
+  - Antigravity: Full-scale execution agent, debugging partner, and quality assurance analyst.
+
+------------------------------------------------------------------------
+2. WHY THESE TOOLS WERE SELECTED
+------------------------------------------------------------------------
+* Node.js & Express: Selected for lightweight routing, rapid development, and native compatibility 
+  with real-time socket events.
+* Socket.IO: Critical for bi-directional, low-latency communication. Streams live crowd density 
+  occupancy updates and triggers emergency alert push notifications instantly.
+* React & Vite: Allows blazing-fast hot-reloading, modular component architecture, and high-performance 
+  rendering of real-time SVG maps and charts.
+* Framer Motion: Selected to create smooth, premium micro-animations (e.g. page transits, modal fades, 
+  and warnings) which elevate the visual aesthetic of the UI.
+* In-Memory DB: Preferred for hackathon speed and simplicity to bypass DB connection latencies while 
+  allowing full CRUD support and realistic database seeding.
+
+------------------------------------------------------------------------
+3. PROMPT ENGINEERING EVOLUTION
+------------------------------------------------------------------------
+The prompts and specifications evolved across three distinct phases:
+
+* Phase 1 (ChatGPT): Broad and conceptual. The prompt focused on defining the project's scope 
+  ("Create a PRD/TRD for a stadium operations and fan app for the FIFA World Cup 2026"). The output 
+  defined functional requirements (FRs) and IoT sensor telemetry schemas.
+* Phase 2 (Claude Opus): Refining and consolidating. The prompt tasked Opus with auditing the ChatGPT 
+  PRD/TRD for technical feasibility, architectural inconsistencies, and missing details (such as the 
+  fallback chat loops and security protocols). This resulted in a unified, highly-detailed master 
+  technical specification document.
+* Phase 3 (Antigravity): Action-oriented and execution-focused. The prompt passed the unified spec 
+  to Antigravity as the single source of truth, detailing the exact bugs to fix and pages to build, 
+  prompting the AI coding agent to perform precise directory modifications.
+
+------------------------------------------------------------------------
+4. GEN AI HANDLED VS. HUMAN DESIGNED
+------------------------------------------------------------------------
+* Human Designed (Architectural Vision & Requirements):
+  - Conceived the core problem statement: optimising crowd safety and fan convenience for World Cup 2026.
+  - Handled the UI layout designs, colour themes, and aesthetic directions (e.g., choosing a glassmorphic 
+    dark-mode design).
+  - Designed the physical stadium layout (placing Gates A-D and Sections 101-108 on the grid).
+  - Curated the specific mock data (dates, teams, and match locations for the World Cup timetable).
+
+* GenAI Handled (Implementation, Logic & Debugging):
+  - Formulated the Dijkstra shortest-path navigation logic incorporating real-time density multipliers.
+  - Implemented the user session context parsing in the chatbot service, allowing the AI to answer 
+    "Where is my seat?" based on ticket metadata.
+  - Built the JWT authentication backend routes and integrated React state-driven routing guards on the client.
+  - Debugged and resolved broken UI components, including dynamic modal logic (reassign staff, alert controls), 
+    and synchronized client UI states with server socket events in real-time.
+========================================================================

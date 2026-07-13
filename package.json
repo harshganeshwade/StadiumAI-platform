@@ -1,0 +1,19 @@
+{
+  "name": "stadium-ai",
+  "version": "1.0.0",
+  "description": "StadiumAI - FIFA World Cup 2026 Stadium Operations Platform",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:fan\" \"npm run dev:dashboard\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:fan": "cd fan-app && npm run dev",
+    "dev:dashboard": "cd dashboard && npm run dev",
+    "install:all": "cd server && npm install && cd ../fan-app && npm install && cd ../dashboard && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "dependencies": {
+    "all": "^0.0.0"
+  }
+}

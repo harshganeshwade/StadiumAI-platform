@@ -1,0 +1,123 @@
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { io } from 'socket.io-client';
+
+import BottomNav from './components/BottomNav';
+import Home from './pages/Home';
+import Chat from './pages/Chat';
+import Navigate from './pages/Navigate';
+import Explore from './pages/Explore';
+import Alerts from './pages/Alerts';
+import Auth from './pages/Auth';
+import Schedule from './pages/Schedule';
+
+/* ---- Auth Context ---- */
+export const AuthContext = createContext(null);
+export const useAuth = () => useContext(AuthContext);
+
+/* ---- Socket Context ---- */
+const SocketContext = createContext(null);
+export const useSocket = () => useContext(SocketContext);
+
+function SocketProvider({ children }) {
+  const socket = useMemo(() => {
+    return io('http://localhost:3001/fan', {
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000,
+      autoConnect: true,
+    });
+  }, []);
+
+  useEffect(() => {
+    socket.on('connect', () => {
+      console.log('[Socket] Connected to /fan namespace:', socket.id);
+    });
+    socket.on('disconnect', (reason) => {
+      console.log('[Socket] Disconnected:', reason);
+    });
+    socket.on('connect_error', (err) => {
+      console.warn('[Socket] Connection error:', err.message);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [socket]);
+
+  return (
+    <SocketContext.Provider value={socket}>
+      {children}
+    </SocketContext.Provider>
+  );
+}
+
+/* ---- Unread Count Context ---- */
+const UnreadContext = createContext({ unreadCount: 0, setUnreadCount: () => {} });
+export const useUnread = () => useContext(UnreadContext);
+
+/* ---- Animated Routes ---- */
+function AnimatedRoutes() {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<Home />} />
+        <Route path="/chat" element={<Chat />} />
+        <Route path="/navigate" element={<Navigate />} />
+        <Route path="/explore" element={<Explore />} />
+        <Route path="/alerts" element={<Alerts />} />
+        <Route path="/schedule" element={<Schedule />} />
+      </Routes>
+    </AnimatePresence>
+  );
+}
+
+/* ---- App Shell ---- */
+export default function App() {
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [token, setToken] = useState(localStorage.getItem('token') || null);
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const login = (userData, userToken) => {
+    localStorage.setItem('token', userToken);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setToken(userToken);
+    setUser(userData);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setToken(null);
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, token, login, logout }}>
+      <SocketProvider>
+        <UnreadContext.Provider value={{ unreadCount, setUnreadCount }}>
+          <BrowserRouter>
+            {token ? (
+              <>
+                <AnimatedRoutes />
+                <BottomNav />
+              </>
+            ) : (
+              <Auth />
+            )}
+          </BrowserRouter>
+        </UnreadContext.Provider>
+      </SocketProvider>
+    </AuthContext.Provider>
+  );
+}

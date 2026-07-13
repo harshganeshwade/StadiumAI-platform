@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Info, Bell, ShieldAlert, CheckCircle, RefreshCw, ChevronDown } from 'lucide-react';
 import { useSocket, useUnread } from '../App';
 
-const API = 'http://localhost:3001';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },

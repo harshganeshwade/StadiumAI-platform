@@ -22,7 +22,7 @@ export const useSocket = () => useContext(SocketContext);
 
 function SocketProvider({ children }) {
   const socket = useMemo(() => {
-    return io('http://localhost:3001/fan', {
+    return io(import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/fan` : 'http://localhost:3001/fan', {
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 10,
       reconnectionDelay: 2000,

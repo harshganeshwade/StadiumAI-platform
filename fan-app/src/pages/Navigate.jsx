@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Navigation, Clock, MapPin, ChevronRight, AlertTriangle } from 'lucide-react';
 import { useSocket, useAuth } from '../App';
 
-const API = 'http://localhost:3001';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },

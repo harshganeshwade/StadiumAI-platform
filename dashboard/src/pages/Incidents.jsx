@@ -11,7 +11,7 @@ import {
 import AlertTable from '../components/AlertTable';
 import { useDashboard } from '../App';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api`;
 
 /* ── Demo alerts ───────────────────────────────────────────────── */
 function generateDemoAlerts() {

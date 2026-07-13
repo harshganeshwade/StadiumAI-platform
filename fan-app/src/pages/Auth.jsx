@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../App';
 import { Shield, Mail, Lock, User, Globe, Eye, EyeOff, AlertTriangle, CheckCircle } from 'lucide-react';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api`;
 
 export default function Auth() {
   const { login } = useAuth();

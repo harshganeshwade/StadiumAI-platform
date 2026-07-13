@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Globe, Send, Bot, User, Shield } from 'lucide-react';
 import { useAuth } from '../App';
 
-const API = 'http://localhost:3001';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const languages = [
   { code: 'en', label: 'English' },

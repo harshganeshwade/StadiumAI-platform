@@ -148,7 +148,7 @@ export default function Home() {
     /* Fetch initial density values from API on mount */
     async function fetchInitialDensity() {
       try {
-        const res = await fetch('http://localhost:3001/api/crowd/density');
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/crowd/density`);
         if (res.ok) {
           const data = await res.json();
           const initialCounts = {};

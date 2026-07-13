@@ -8,7 +8,9 @@ import Incidents from './pages/Incidents';
 import Staff from './pages/Staff';
 import Analytics from './pages/Analytics';
 
-const SOCKET_URL = 'http://localhost:3001/dashboard';
+const SOCKET_URL = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL}/dashboard` 
+  : 'http://localhost:3001/dashboard';
 
 export const DashboardContext = createContext(null);
 

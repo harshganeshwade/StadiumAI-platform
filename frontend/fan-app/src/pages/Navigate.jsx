@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Navigation, Clock, MapPin, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Navigation, Clock, MapPin } from 'lucide-react';
 import { useSocket, useAuth } from '../App';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3001';

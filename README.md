@@ -158,3 +158,35 @@ If the LLM engine times out or encounters a connection issue, it automatically d
 1. **ESP32 Edge Gateway Integration:** Direct telemetry from physical hardware via mTLS 1.3 protocol.
 2. **Predictive Analytics:** Forecasting bottleneck zones 30 minutes in advance using historic flow rates.
 3. **Autonomous Surveillance Alerts:** Interfacing direct computer vision analytics cameras with emergency dispatches.
+
+---
+
+## 🧪 8. Test Suite & Coverage
+
+StadiumAI includes a comprehensive test suite covering authentication, alerts routing, chatbot fallback processing, and path navigation.
+
+To install dependencies and run the tests:
+```bash
+# Install root dependencies
+npm install
+
+# Run the test suite with coverage
+npm test
+```
+
+Current test suite achievements:
+- **Statement Coverage:** >80% statement coverage on core business logic.
+- **Function Coverage:** >80% function coverage on API endpoints and utility routines.
+- **Sequential Execution:** Run in sequential/band mode (`--runInBand`) to guarantee thread-safe in-memory database assertions.
+
+## 📁 9. Folder Structure
+
+```
+├── .github/workflows/   # CI/CD workflows
+├── backend/            # Express, Socket.IO operational server
+├── frontend/           # Frontends
+│   ├── fan-app/        # Vite fan application
+│   └── dashboard/      # Vite dashboard console
+├── docs/               # PRD and TRD documents
+├── tests/              # Jest integration & unit tests
+```

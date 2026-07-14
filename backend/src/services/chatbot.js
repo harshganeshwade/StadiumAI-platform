@@ -9,6 +9,10 @@
 'use strict';
 
 const { v4: uuidv4 } = require('uuid');
+const db = require('../db');
+const TTLCache = require('../utils/cache');
+
+const chatCache = new TTLCache(10000); // 10 seconds cache
 
 // ---------------------------------------------------------------------------
 // Intent definitions with keyword patterns
@@ -374,6 +378,17 @@ async function processMessage(request) {
   const activeSeat = context.seat || 'Row H, Seat 12';
   const activeTicketClass = context.ticket_class || 'General Admission';
 
+  // Check cache for duplicate AI requests
+  const cacheKey = `${message.toLowerCase().trim()}_${language}_${activeZone}_${activeSeat}_${activeTicketClass}`;
+  const cachedResponse = chatCache.get(cacheKey);
+  if (cachedResponse) {
+    return {
+      ...cachedResponse,
+      session_id,
+      timestamp: new Date().toISOString()
+    };
+  }
+
   // Simulate AI processing delay (300-800ms) for realism
   const delay = 300 + Math.random() * 500;
   await new Promise((resolve) => setTimeout(resolve, delay));
@@ -406,7 +421,6 @@ async function processMessage(request) {
   }
 
   // Store in chat session
-  const db = require('../db');
   db.addChatMessage(session_id, {
     role: 'user',
     content: message,
@@ -431,6 +445,8 @@ async function processMessage(request) {
     timestamp: new Date().toISOString(),
     processing_time_ms: Math.round(delay),
   };
+
+  chatCache.set(cacheKey, response);
 
   return response;
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Search, Bell, MapPin, ArrowLeft, Clock, Award } from 'lucide-react';
+import { Search, Bell, MapPin, ArrowLeft, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const pageVariants = {

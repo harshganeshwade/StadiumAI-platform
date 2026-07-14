@@ -1,16 +1,17 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import { io } from 'socket.io-client';
 
 import BottomNav from './components/BottomNav';
-import Home from './pages/Home';
-import Chat from './pages/Chat';
-import Navigate from './pages/Navigate';
-import Explore from './pages/Explore';
-import Alerts from './pages/Alerts';
-import Auth from './pages/Auth';
-import Schedule from './pages/Schedule';
+
+const Home = lazy(() => import('./pages/Home'));
+const Chat = lazy(() => import('./pages/Chat'));
+const Navigate = lazy(() => import('./pages/Navigate'));
+const Explore = lazy(() => import('./pages/Explore'));
+const Alerts = lazy(() => import('./pages/Alerts'));
+const Auth = lazy(() => import('./pages/Auth'));
+const Schedule = lazy(() => import('./pages/Schedule'));
 
 /* ---- Auth Context ---- */
 export const AuthContext = createContext(null);
@@ -107,14 +108,16 @@ export default function App() {
       <SocketProvider>
         <UnreadContext.Provider value={{ unreadCount, setUnreadCount }}>
           <BrowserRouter>
-            {token ? (
-              <>
-                <AnimatedRoutes />
-                <BottomNav />
-              </>
-            ) : (
-              <Auth />
-            )}
+            <Suspense fallback={<div className="loading" style={{ color: '#fff', padding: 20, textAlign: 'center', marginTop: 100 }}>Loading...</div>}>
+              {token ? (
+                <>
+                  <AnimatedRoutes />
+                  <BottomNav />
+                </>
+              ) : (
+                <Auth />
+              )}
+            </Suspense>
           </BrowserRouter>
         </UnreadContext.Provider>
       </SocketProvider>

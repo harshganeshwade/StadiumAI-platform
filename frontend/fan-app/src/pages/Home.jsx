@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MessageSquare, Map, Compass, Bell, Users, Zap, ChevronRight, Calendar } from 'lucide-react';
+import { MessageSquare, Map, Compass, Bell, Users, Zap, Calendar } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useSocket, useAuth } from '../App';
 

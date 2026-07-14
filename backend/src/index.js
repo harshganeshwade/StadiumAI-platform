@@ -7,6 +7,7 @@
 
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const http = require('http');
 const socketIo = require('socket.io');
 
@@ -43,6 +44,7 @@ const corsOptions = {
   credentials: true
 };
 
+app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json());
 
@@ -154,30 +156,32 @@ alertEngine.init((alertEvent) => {
 });
 
 // Start simulations and wire sensor inputs to crowd analytics & alert engine
-sensorSimulator.start((crowdEvent) => {
-  // Emit to all connected clients
-  fanNamespace.emit('crowd:density', crowdEvent);
-  dashboardNamespace.emit('crowd:density', crowdEvent);
+if (process.env.NODE_ENV !== 'test') {
+  sensorSimulator.start((crowdEvent) => {
+    // Emit to all connected clients
+    fanNamespace.emit('crowd:density', crowdEvent);
+    dashboardNamespace.emit('crowd:density', crowdEvent);
 
-  // Send to alert engine to check for critical congestion thresholds (FR-02)
-  alertEngine.processCrowdEvent(crowdEvent);
-});
+    // Send to alert engine to check for critical congestion thresholds (FR-02)
+    alertEngine.processCrowdEvent(crowdEvent);
+  });
 
-// Start alert generator simulator
-alertSimulator.start();
+  // Start alert generator simulator
+  alertSimulator.start();
 
-// Start HTTP Server
-const PORT = config.PORT;
-server.listen(PORT, () => {
-  console.log(`
-┌────────────────────────────────────────────────────────┐
-│                                                        │
-│   StadiumAI Operational Monolith Server                │
-│   Serving FIFA World Cup 2026 Operations               │
-│   Port: ${PORT}                                           │
-│                                                        │
-└────────────────────────────────────────────────────────┘
-  `);
-});
+  // Start HTTP Server
+  const PORT = config.PORT;
+  server.listen(PORT, () => {
+    console.log(`
+  ┌────────────────────────────────────────────────────────┐
+  │                                                        │
+  │   StadiumAI Operational Monolith Server                │
+  │   Serving FIFA World Cup 2026 Operations               │
+  │   Port: ${PORT}                                           │
+  │                                                        │
+  └────────────────────────────────────────────────────────┘
+    `);
+  });
+}
 
 module.exports = { app, server };

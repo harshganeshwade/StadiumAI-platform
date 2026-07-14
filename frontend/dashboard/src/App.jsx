@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import React, { useState, useEffect, useCallback, createContext, useContext, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Sidebar from './components/Sidebar';
-import Overview from './pages/Overview';
-import CrowdMap from './pages/CrowdMap';
-import Incidents from './pages/Incidents';
-import Staff from './pages/Staff';
-import Analytics from './pages/Analytics';
+
+const Overview = lazy(() => import('./pages/Overview'));
+const CrowdMap = lazy(() => import('./pages/CrowdMap'));
+const Incidents = lazy(() => import('./pages/Incidents'));
+const Staff = lazy(() => import('./pages/Staff'));
+const Analytics = lazy(() => import('./pages/Analytics'));
 
 const SOCKET_URL = import.meta.env.VITE_API_URL 
   ? `${import.meta.env.VITE_API_URL}/dashboard` 
@@ -142,13 +143,15 @@ export default function App() {
             alertsCount={alertsCount}
           />
           <main className={`main-content${sidebarCollapsed ? ' sidebar-collapsed' : ''}`} id="main-content">
-            <Routes>
-              <Route path="/" element={<Overview />} />
-              <Route path="/crowd" element={<CrowdMap />} />
-              <Route path="/incidents" element={<Incidents />} />
-              <Route path="/staff" element={<Staff />} />
-              <Route path="/analytics" element={<Analytics />} />
-            </Routes>
+            <Suspense fallback={<div className="loading" style={{ color: '#fff', padding: 20, textAlign: 'center', marginTop: 100 }}>Loading dashboard...</div>}>
+              <Routes>
+                <Route path="/" element={<Overview />} />
+                <Route path="/crowd" element={<CrowdMap />} />
+                <Route path="/incidents" element={<Incidents />} />
+                <Route path="/staff" element={<Staff />} />
+                <Route path="/analytics" element={<Analytics />} />
+              </Routes>
+            </Suspense>
           </main>
         </div>
       </BrowserRouter>

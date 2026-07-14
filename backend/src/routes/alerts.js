@@ -17,14 +17,21 @@ const { verifyToken, requireRole } = require('../middleware/auth');
  */
 router.get('/', verifyToken, (req, res) => {
   try {
-    const { status, severity, type } = req.query;
+    const { status, severity, type, page = 1, limit = 20 } = req.query;
     const filters = {};
     if (status) filters.status = status;
     if (severity) filters.severity = severity;
     if (type) filters.type = type;
 
     const alerts = db.getAlerts(filters);
-    res.json(alerts);
+    
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const startIndex = (pageNum - 1) * limitNum;
+    const endIndex = startIndex + limitNum;
+    const paginatedAlerts = alerts.slice(startIndex, endIndex);
+
+    res.json(paginatedAlerts);
   } catch (err) {
     console.error('[AlertsRoute] Error fetching alerts:', err);
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to retrieve alerts.' });

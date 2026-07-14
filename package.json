@@ -5,15 +5,28 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:fan\" \"npm run dev:dashboard\"",
-    "dev:server": "cd server && npm run dev",
-    "dev:fan": "cd fan-app && npm run dev",
-    "dev:dashboard": "cd dashboard && npm run dev",
-    "install:all": "cd server && npm install && cd ../fan-app && npm install && cd ../dashboard && npm install"
+    "dev:server": "cd backend && npm run dev",
+    "dev:fan": "cd frontend/fan-app && npm run dev",
+    "dev:dashboard": "cd frontend/dashboard && npm run dev",
+    "install:all": "cd backend && npm install && cd ../frontend/fan-app && npm install && cd ../frontend/dashboard && npm install",
+    "test": "jest --coverage --runInBand --detectOpenHandles --forceExit"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2"
   },
   "dependencies": {
     "all": "^0.0.0"
+  },
+  "jest": {
+    "moduleDirectories": [
+      "node_modules",
+      "<rootDir>/backend/node_modules"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/backend/src/simulators/"
+    ]
   }
 }

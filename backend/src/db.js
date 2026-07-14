@@ -172,22 +172,35 @@ const recommendations = [
 ];
 
 // ---------------------------------------------------------------------------
-// Runtime Data Stores
+// Runtime Data Stores & Indexes
 // ---------------------------------------------------------------------------
 let alerts = [];
+const alertsById = new Map();
 const crowdDensity = new Map(); // zone_id -> CrowdDensityEvent
 const chatSessions = new Map(); // session_id -> { messages[], created_at }
 let notifications = [];
+
+// Index tables for O(1) user lookups
+const usersByEmail = new Map();
+const usersById = new Map();
+
+// Initialize user indexes
+for (const u of users) {
+  usersByEmail.set(u.email.toLowerCase(), u);
+  usersById.set(u.id, u);
+}
 
 // ---------------------------------------------------------------------------
 // User Functions
 // ---------------------------------------------------------------------------
 function getUser(email) {
-  return users.find((u) => u.email === email) || null;
+  if (!email) return null;
+  return usersByEmail.get(email.toLowerCase()) || null;
 }
 
 function getUserById(id) {
-  return users.find((u) => u.id === id) || null;
+  if (!id) return null;
+  return usersById.get(id) || null;
 }
 
 function createUser({ name, email, password, role = 'fan', preferred_language = 'en' }) {
@@ -207,6 +220,8 @@ function createUser({ name, email, password, role = 'fan', preferred_language = 
     created_at: new Date().toISOString(),
   };
   users.push(user);
+  usersByEmail.set(user.email.toLowerCase(), user);
+  usersById.set(user.id, user);
   return user;
 }
 
@@ -235,20 +250,24 @@ function getAlerts(filters = {}) {
 }
 
 function getAlertById(id) {
-  return alerts.find((a) => a.alert_id === id) || null;
+  return alertsById.get(id) || null;
 }
 
 function addAlert(alert) {
   alerts.push(alert);
+  alertsById.set(alert.alert_id, alert);
   // Keep only last 500 alerts in memory
   if (alerts.length > 500) {
-    alerts = alerts.slice(-500);
+    const removed = alerts.shift();
+    if (removed) {
+      alertsById.delete(removed.alert_id);
+    }
   }
   return alert;
 }
 
 function updateAlert(id, updates) {
-  const alert = alerts.find((a) => a.alert_id === id);
+  const alert = alertsById.get(id);
   if (!alert) return null;
   Object.assign(alert, updates, { updated_at: new Date().toISOString() });
   return alert;

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Globe, Send, Bot, User, Shield } from 'lucide-react';
+import { ArrowLeft, Globe, Send, Bot, Shield } from 'lucide-react';
 import { useAuth } from '../App';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3001';

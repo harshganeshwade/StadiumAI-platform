@@ -40,6 +40,10 @@ if (isNaN(config.PORT) || config.PORT <= 0) {
 }
 if (!config.JWT_SECRET || config.JWT_SECRET === 'stadium-ai-secret-key-2026') {
   console.warn('[StartupWarning] Running with default JWT secret. Configure JWT_SECRET in production.');
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[StartupError] Running with default JWT secret in production mode is prohibited. Exiting...');
+    process.exit(1);
+  }
 }
 
 // Initialize express app
@@ -92,6 +96,26 @@ app.set('io', io);
 const fanNamespace = io.of('/fan');
 const dashboardNamespace = io.of('/dashboard');
 
+// Handshake authentication middleware for Socket.IO (Security Best Practice)
+const verifySocketToken = (socket, next) => {
+  const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, config.JWT_SECRET, {
+        issuer: config.JWT_ISSUER
+      });
+      socket.userId = decoded.id;
+      socket.userRole = decoded.role;
+    } catch (err) {
+      return next(new Error('Authentication failed: invalid token'));
+    }
+  }
+  next();
+};
+
+fanNamespace.use(verifySocketToken);
+dashboardNamespace.use(verifySocketToken);
+
 // Track connected users
 const connectedFans = new Map(); // socket.id -> userId
 const connectedStaff = new Map(); // socket.id -> userId
@@ -99,11 +123,19 @@ const connectedStaff = new Map(); // socket.id -> userId
 fanNamespace.on('connection', (socket) => {
   console.log(`[Socket.IO] Fan connected: ${socket.id}`);
 
+  // Automatically authenticate if token was verified in handshake
+  if (socket.userId) {
+    connectedFans.set(socket.id, socket.userId);
+    socket.join(socket.userId);
+    console.log(`[Socket.IO] Fan authenticated via handshake: ${socket.userId}`);
+  }
+
   socket.on('authenticate', (token) => {
     // Basic decode of JWT to subscribe user to their room
     try {
       const decoded = jwt.verify(token, config.JWT_SECRET);
       const userId = decoded.id;
+      socket.userId = userId;
       connectedFans.set(socket.id, userId);
       socket.join(userId);
       console.log(`[Socket.IO] Fan authenticated: ${userId} for socket: ${socket.id}`);
@@ -121,11 +153,19 @@ fanNamespace.on('connection', (socket) => {
 dashboardNamespace.on('connection', (socket) => {
   console.log(`[Socket.IO] Dashboard operator connected: ${socket.id}`);
 
+  // Automatically authenticate if token was verified in handshake
+  if (socket.userId && (socket.userRole === 'staff' || socket.userRole === 'admin')) {
+    connectedStaff.set(socket.id, socket.userId);
+    socket.join('operators');
+    console.log(`[Socket.IO] Staff/Admin connected to operators room via handshake: ${socket.userId}`);
+  }
+
   socket.on('authenticate', (token) => {
     try {
       const decoded = jwt.verify(token, config.JWT_SECRET);
       if (decoded.role === 'staff' || decoded.role === 'admin') {
         const userId = decoded.id;
+        socket.userId = userId;
         connectedStaff.set(socket.id, userId);
         socket.join('operators');
         console.log(`[Socket.IO] Staff/Admin connected to operators room: ${userId}`);

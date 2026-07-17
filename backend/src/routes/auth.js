@@ -25,6 +25,10 @@ router.post('/register', (req, res) => {
       return res.status(400).json({ error: 'MISSING_FIELDS', message: 'Name, email, and password are required.' });
     }
 
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'WEAK_PASSWORD', message: 'Password must be at least 8 characters long.' });
+    }
+
     const existingUser = db.getUser(email);
     if (existingUser) {
       return res.status(400).json({ error: 'EMAIL_EXISTS', message: 'Email address already registered.' });

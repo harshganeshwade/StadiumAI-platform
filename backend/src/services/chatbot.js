@@ -10,6 +10,7 @@
 
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db');
+const config = require('../config');
 const TTLCache = require('../utils/cache');
 const { CircuitBreaker } = require('./circuitBreaker');
 const { RESPONSES, FALLBACK_RESPONSES } = require('./locales');
@@ -283,51 +284,63 @@ async function processMessage(request) {
 
   // Execute conversational AI reasoning through CircuitBreaker (FR-08)
   const result = await llmBreaker.execute(async () => {
-    // Simulate AI processing delay (300-800ms) for realism
-    const delay = 300 + Math.random() * 500;
-    await new Promise((resolve) => setTimeout(resolve, delay));
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('LLM_TIMEOUT')), config.AI_MODEL_TIMEOUT_MS);
+    });
 
-    // Classify intent
-    const { intent, confidence } = classifyIntent(message);
+    const workPromise = (async () => {
+      // Simulate AI processing delay (300-800ms) for realism
+      const delay = 300 + Math.random() * 500;
+      await new Promise((resolve) => setTimeout(resolve, delay));
 
-    // Build response
-    let responseText;
-    let actions;
-    let escalate = false;
+      // Classify intent
+      const { intent, confidence } = classifyIntent(message);
 
-    if (confidence < 0.3) {
-      // Low confidence → fallback FAQ + escalation
-      responseText = FALLBACK_RESPONSES[language] || FALLBACK_RESPONSES.en;
-      actions = [
-        { label: 'Talk to Staff', action: 'escalate_to_human' },
-        { label: 'Try Again', action: 'retry' },
-      ];
-      escalate = true;
-    } else {
-      responseText = getResponseText(intent, language);
-      actions = getSuggestedActions(intent);
+      // Build response
+      let responseText;
+      let actions;
+      let escalate = false;
 
-      // Template substitution for context parameters
-      responseText = responseText
-        .replace(/{zone}/g, activeZone.toUpperCase())
-        .replace(/{seat}/g, activeSeat)
-        .replace(/{ticket_class}/g, activeTicketClass);
-    }
+      if (confidence < 0.3) {
+        // Low confidence → fallback FAQ + escalation
+        responseText = FALLBACK_RESPONSES[language] || FALLBACK_RESPONSES.en;
+        actions = [
+          { label: 'Talk to Staff', action: 'escalate_to_human' },
+          { label: 'Try Again', action: 'retry' },
+        ];
+        escalate = true;
+      } else {
+        responseText = getResponseText(intent, language);
+        actions = getSuggestedActions(intent);
 
-    return { responseText, actions, escalate, delay };
+        // Template substitution for context parameters
+        responseText = responseText
+          .replace(/{zone}/g, activeZone.toUpperCase())
+          .replace(/{seat}/g, activeSeat)
+          .replace(/{ticket_class}/g, activeTicketClass);
+      }
+
+      clearTimeout(timeoutId);
+      return { responseText, actions, escalate, delay };
+    })();
+
+    return Promise.race([workPromise, timeoutPromise]);
   }, () => {
     // Open Circuit Breaker Fallback
     return {
-      responseText: FALLBACK_RESPONSES[language] || FALLBACK_RESPONSES.en,
+      responseText: "I am experiencing high response times at the moment. Please consult our static FAQ, or contact stadium staff directly for assistance.",
       actions: [
         { label: 'Talk to Staff', action: 'escalate_to_human' },
       ],
       escalate: true,
       delay: 0,
+      isTimeout: true,
+      intent: 'fallback_timeout'
     };
   });
 
-  const { responseText, actions, escalate, delay } = result;
+  const { responseText, actions, escalate, delay, isTimeout, intent: resultIntent } = result;
 
   // Store in chat session
   db.addChatMessage(session_id, {
@@ -346,8 +359,9 @@ async function processMessage(request) {
     response_id: uuidv4(),
     session_id,
     message: responseText,
-    intent: result.intent || classifyIntent(message).intent,
-    confidence: classifyIntent(message).confidence,
+    reply: responseText, // both reply and message for API compatibility
+    intent: resultIntent || (isTimeout ? 'fallback_timeout' : classifyIntent(message).intent),
+    confidence: isTimeout ? 0.0 : classifyIntent(message).confidence,
     language,
     suggested_actions: actions,
     escalate,

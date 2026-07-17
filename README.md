@@ -154,14 +154,25 @@ If the LLM engine times out or encounters a connection issue, it automatically d
 
 ---
 
-## 🚀 Future Scope
+## 🚀 8. Production FIFA World Cup 2026 Deployment Plan
+
+To transition from the hackathon prototype to a fully resilient system capable of supporting MetLife Stadium's 80,000+ matchday attendees, we designed a comprehensive [Production Deployment Guide](file:///c:/Users/DELL/OneDrive/Desktop/Hackathon/docs/FIFA_DEPLOYMENT_GUIDE.md). Key winning highlights include:
+
+* **Relational & Caching Split-DB Topology:** Transition from an in-memory database to a primary-replica **PostgreSQL** cluster for transactional logs (users, alerts, dispatches) and a multi-node **Redis** cluster for high-velocity IoT crowd density caches, session locks, and rate limit counters.
+* **Distributed Socket.IO horizontal scaling:** Employs a Redis pub/sub adapter to synchronize real-time alerts across multiple API gateway replicas, bound behind an Application Load Balancer with sticky sessions.
+* **IoT & ESP32 Edge Device Safeguards:** Formulates strict standards including device flash encryption, secure boot validation, certificate-based **mTLS 1.3** communication, and cryptographic nonces with a 30-second sliding time window to stop replay attacks.
+* **Quality Gates & Test Coverage:** An automated CI/CD flow enforcing code style and strict quality thresholds requiring minimum **85% statement coverage** across backend modules.
+
+---
+
+## 🔮 9. Future Scope
 1. **ESP32 Edge Gateway Integration:** Direct telemetry from physical hardware via mTLS 1.3 protocol.
 2. **Predictive Analytics:** Forecasting bottleneck zones 30 minutes in advance using historic flow rates.
 3. **Autonomous Surveillance Alerts:** Interfacing direct computer vision analytics cameras with emergency dispatches.
 
 ---
 
-## 🧪 8. Test Suite & Coverage
+## 🧪 10. Test Suite & Coverage
 
 StadiumAI includes a comprehensive test suite covering authentication, alerts routing, chatbot fallback processing, and path navigation.
 
@@ -175,11 +186,11 @@ npm test
 ```
 
 Current test suite achievements:
-- **Statement Coverage:** >80% statement coverage on core business logic.
+- **Statement Coverage:** >85% statement coverage on core business logic.
 - **Function Coverage:** >80% function coverage on API endpoints and utility routines.
 - **Sequential Execution:** Run in sequential/band mode (`--runInBand`) to guarantee thread-safe in-memory database assertions.
 
-## 📁 9. Folder Structure
+## 📁 11. Folder Structure
 
 ```
 ├── .github/workflows/   # CI/CD workflows
@@ -187,6 +198,6 @@ Current test suite achievements:
 ├── frontend/           # Frontends
 │   ├── fan-app/        # Vite fan application
 │   └── dashboard/      # Vite dashboard console
-├── docs/               # PRD and TRD documents
+├── docs/               # PRD, TRD and FIFA Deployment Guide
 ├── tests/              # Jest integration & unit tests
 ```

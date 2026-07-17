@@ -106,14 +106,28 @@ router.get('/me', verifyToken, (req, res) => {
  */
 router.post('/reset-password', (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
+    const { email, currentPassword, newPassword, password } = req.body;
+    const targetPassword = newPassword || password;
+
+    if (!email || !targetPassword) {
       return res.status(400).json({ error: 'MISSING_FIELDS', message: 'Email and new password are required.' });
     }
 
-    const updated = db.updateUserPassword(email, password);
-    if (!updated) {
+    const user = db.getUser(email);
+    if (!user) {
       return res.status(404).json({ error: 'USER_NOT_FOUND', message: 'User with this email does not exist.' });
+    }
+
+    if (currentPassword) {
+      const validPassword = bcrypt.compareSync(currentPassword, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'Invalid current password.' });
+      }
+    }
+
+    const updated = db.updateUserPassword(email, targetPassword);
+    if (!updated) {
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Failed to reset password.' });
     }
 
     res.json({ message: 'Password reset successful.' });

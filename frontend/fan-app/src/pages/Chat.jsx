@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Globe, Send, Bot, Shield } from 'lucide-react';
+import { ArrowLeft, Globe, Send, Bot, Shield, Mic, Volume2 } from 'lucide-react';
 import { useAuth } from '../App';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -35,7 +35,7 @@ const msgVariants = {
 
 export default function Chat() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   
   const [messages, setMessages] = useState([
     {
@@ -50,8 +50,11 @@ export default function Chat() {
   const [isTyping, setIsTyping] = useState(false);
   const [lang, setLang] = useState('en');
   const [showLangPicker, setShowLangPicker] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const recognitionRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -60,6 +63,42 @@ export default function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = lang;
+
+      rec.onstart = () => setIsListening(true);
+      rec.onend = () => setIsListening(false);
+      rec.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+      };
+      recognitionRef.current = rec;
+    }
+  }, [lang]);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) return;
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      recognitionRef.current.start();
+    }
+  };
+
+  const speakMessage = (text) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = lang;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
   const sendMessage = async (text) => {
     if (!text.trim()) return;
@@ -78,7 +117,10 @@ export default function Chat() {
     try {
       const res = await fetch(`${API}/api/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           fan_id: user?.id || 'anonymous',
           message: text.trim(),
@@ -98,7 +140,7 @@ export default function Chat() {
       const botMsg = {
         id: `bot-${Date.now()}`,
         role: 'bot',
-        text: data.response || data.message || "I'm sorry, I couldn't process that. Please try again.",
+        text: data.message || "I'm sorry, I couldn't process that. Please try again.",
         confidence: data.confidence ?? 0.85,
         timestamp: new Date(),
       };
@@ -227,12 +269,22 @@ export default function Chat() {
                     <div className="chat-bubble chat-bubble--bot">
                       {msg.text}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 8 }}>
-                        {msg.confidence > 0 && (
-                          <span className={`badge ${confidenceLabel(msg.confidence).cls}`} style={{ fontSize: '0.5625rem' }}>
-                            <Shield size={9} />
-                            {confidenceLabel(msg.confidence).text}
-                          </span>
-                        )}
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          {msg.confidence > 0 && (
+                            <span className={`badge ${confidenceLabel(msg.confidence).cls}`} style={{ fontSize: '0.5625rem' }}>
+                              <Shield size={9} />
+                              {confidenceLabel(msg.confidence).text}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => speakMessage(msg.text)}
+                            style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                            aria-label="Read response aloud"
+                          >
+                            <Volume2 size={12} />
+                          </button>
+                        </div>
                         <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
                           {formatTime(msg.timestamp)}
                         </span>
@@ -295,6 +347,26 @@ export default function Chat() {
           id="chat-input-field"
           aria-label="Type a message"
         />
+        <button
+          type="button"
+          onClick={toggleListening}
+          className={`chat-mic-btn ${isListening ? 'chat-mic-btn--active' : ''}`}
+          id="chat-mic-btn"
+          aria-label={isListening ? "Stop listening" : "Start voice typing"}
+          style={{
+            background: isListening ? 'var(--accent-red)' : 'transparent',
+            border: 'none',
+            color: isListening ? '#fff' : 'var(--text-secondary)',
+            cursor: 'pointer',
+            padding: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '50%'
+          }}
+        >
+          <Mic size={18} />
+        </button>
         <button
           type="submit"
           className="chat-send-btn"

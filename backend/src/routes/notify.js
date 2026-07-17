@@ -14,9 +14,15 @@ const { v4: uuidv4 } = require('uuid');
  * GET /api/notifications/:userId
  * Get all notifications for a specific user (including global broadcasts).
  */
-router.get('/:userId', (req, res) => {
+router.get('/:userId', verifyToken, (req, res) => {
   try {
     const userId = req.params.userId;
+
+    // Check authorization: must be the user themselves or staff/admin
+    if (req.user.id !== userId && req.user.role !== 'staff' && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'FORBIDDEN', message: 'You are not authorized to access these notifications.' });
+    }
+
     const notifications = db.getNotifications(userId);
     res.json(notifications);
   } catch (err) {

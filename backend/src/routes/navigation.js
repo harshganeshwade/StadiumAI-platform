@@ -7,12 +7,13 @@
 const express = require('express');
 const router = express.Router();
 const recommendation = require('../services/recommendation');
+const { verifyToken } = require('../middleware/auth');
 
 /**
  * POST /api/navigate
  * Calculate optimal route from one zone to another.
  */
-router.post('/', (req, res) => {
+router.post('/', verifyToken, (req, res) => {
   try {
     const { from_zone, to_zone } = req.body;
 

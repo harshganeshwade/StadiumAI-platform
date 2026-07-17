@@ -2,13 +2,21 @@ const request = require('supertest');
 const { app, server } = require('../backend/src/index');
 const config = require('../backend/src/config');
 const chatbot = require('../backend/src/services/chatbot');
+const db = require('../backend/src/db');
+const jwt = require('jsonwebtoken');
 
 describe('Chatbot API and Fallback Tests', () => {
+  let token;
 
+  beforeAll(() => {
+    const fanUser = db.getUser('fan1@stadium.ai');
+    token = jwt.sign({ id: fanUser.id, role: fanUser.role }, config.JWT_SECRET, { issuer: config.JWT_ISSUER });
+  });
 
   test('POST /api/chat - Should process message and classify intent successfully', async () => {
     const res = await request(app)
       .post('/api/chat')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         session_id: 'test-session-123',
         message: 'Where is my seat?',
@@ -30,6 +38,7 @@ describe('Chatbot API and Fallback Tests', () => {
   test('POST /api/chat - Should fall back to static FAQ on unrecognized messages (low confidence)', async () => {
     const res = await request(app)
       .post('/api/chat')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         session_id: 'test-session-123',
         message: 'xyz123abcfakequestionhere',
@@ -48,6 +57,7 @@ describe('Chatbot API and Fallback Tests', () => {
 
     const res = await request(app)
       .post('/api/chat')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         session_id: 'test-session-timeout',
         message: 'Where is my seat?',

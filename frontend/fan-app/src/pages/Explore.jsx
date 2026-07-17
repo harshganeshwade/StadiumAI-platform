@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Star, MapPin, X, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
+import { useAuth } from '../App';
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const pageVariants = {
@@ -105,6 +105,7 @@ const styles = {
 
 export default function Explore() {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [category, setCategory] = useState('All');
   const [items, setItems] = useState(fallbackItems);
   const [search, setSearch] = useState('');
@@ -118,7 +119,11 @@ export default function Explore() {
       setLoading(true);
       try {
         const queryParam = category === 'All' ? '' : `?category=${category.toLowerCase()}`;
-        const res = await fetch(`${API}/api/recommendations${queryParam}`);
+        const res = await fetch(`${API}/api/recommendations${queryParam}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         if (!res.ok) throw new Error('Failed');
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {

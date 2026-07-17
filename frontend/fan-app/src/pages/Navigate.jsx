@@ -94,7 +94,7 @@ const styles = {
 
 export default function Navigate() {
   const socket = useSocket();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const location = useLocation();
   const [densityMap, setDensityMap] = useState(defaultDensityMap);
   const [selectedZone, setSelectedZone] = useState(null);
@@ -124,7 +124,10 @@ export default function Navigate() {
     try {
       const res = await fetch(`${API}/api/navigate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           fan_id: user?.id || 'fan1',
           from_zone: startPoint,

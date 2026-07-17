@@ -95,11 +95,24 @@ describe('Authentication API Endpoint Tests', () => {
       .post('/api/auth/reset-password')
       .send({
         email: testUser.email,
-        password: 'newpassword123'
+        currentPassword: testUser.password,
+        newPassword: 'newpassword123'
       });
 
     expect(res.statusCode).toEqual(200);
     expect(res.body.message).toContain('successful');
+  });
+
+  test('POST /api/auth/reset-password - Should fail if current password is wrong', async () => {
+    const res = await request(app)
+      .post('/api/auth/reset-password')
+      .send({
+        email: testUser.email,
+        currentPassword: 'wrong-current-password',
+        newPassword: 'newpassword1234'
+      });
+
+    expect(res.statusCode).toEqual(401);
   });
 
   test('POST /api/auth/register - Should fail with missing fields', async () => {

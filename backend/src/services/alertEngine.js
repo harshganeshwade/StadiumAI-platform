@@ -35,7 +35,7 @@ function createAlertEvent({ type, severity, zone_id, message, details = {}, sour
     message,
     details,
     source,
-    status: 'active',
+    status: 'open',
     assigned_to: null,
     acknowledged_at: null,
     resolved_at: null,
@@ -171,7 +171,7 @@ function processAnomaly(zoneId, type, details = {}) {
 function getActiveAlerts(filters = {}) {
   const defaultFilters = { ...filters };
   if (!defaultFilters.status) {
-    defaultFilters.status = 'active';
+    defaultFilters.status = 'open';
   }
   return db.getAlerts(defaultFilters);
 }

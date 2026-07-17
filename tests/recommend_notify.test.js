@@ -6,6 +6,7 @@ const config = require('../backend/src/config');
 
 describe('Recommendations and Notifications Routes Tests', () => {
   let adminToken;
+  let fanToken;
   let adminUser;
   let fanUser;
 
@@ -14,6 +15,7 @@ describe('Recommendations and Notifications Routes Tests', () => {
     fanUser = db.getUser('fan1@stadium.ai');
 
     adminToken = jwt.sign({ id: adminUser.id, role: adminUser.role }, config.JWT_SECRET, { issuer: config.JWT_ISSUER });
+    fanToken = jwt.sign({ id: fanUser.id, role: fanUser.role }, config.JWT_SECRET, { issuer: config.JWT_ISSUER });
   });
 
   afterAll((done) => {
@@ -22,20 +24,26 @@ describe('Recommendations and Notifications Routes Tests', () => {
   });
 
   test('GET /api/recommendations - Should fetch recommendations without filters', async () => {
-    const res = await request(app).get('/api/recommendations');
+    const res = await request(app)
+      .get('/api/recommendations')
+      .set('Authorization', `Bearer ${fanToken}`);
     expect(res.statusCode).toEqual(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThan(0);
   });
 
   test('GET /api/recommendations - Should filter by category food', async () => {
-    const res = await request(app).get('/api/recommendations?category=food');
+    const res = await request(app)
+      .get('/api/recommendations?category=food')
+      .set('Authorization', `Bearer ${fanToken}`);
     expect(res.statusCode).toEqual(200);
     expect(res.body.every(item => item.category === 'food')).toBe(true);
   });
 
   test('GET /api/notifications/:userId - Should fetch notifications for fanUser', async () => {
-    const res = await request(app).get(`/api/notifications/${fanUser.id}`);
+    const res = await request(app)
+      .get(`/api/notifications/${fanUser.id}`)
+      .set('Authorization', `Bearer ${fanToken}`);
     expect(res.statusCode).toEqual(200);
     expect(Array.isArray(res.body)).toBe(true);
   });

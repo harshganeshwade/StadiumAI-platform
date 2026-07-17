@@ -10,6 +10,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const http = require('http');
 const socketIo = require('socket.io');
+const jwt = require('jsonwebtoken');
 
 const config = require('./config');
 const db = require('./db');
@@ -31,6 +32,15 @@ const crowdAnalytics = require('./services/crowdAnalytics');
 // Simulators
 const sensorSimulator = require('./simulators/sensorSimulator');
 const alertSimulator = require('./simulators/alertSimulator');
+
+// Validate required config configurations
+if (isNaN(config.PORT) || config.PORT <= 0) {
+  console.error('[StartupError] Invalid PORT configuration. Exiting...');
+  process.exit(1);
+}
+if (!config.JWT_SECRET || config.JWT_SECRET === 'stadium-ai-secret-key-2026') {
+  console.warn('[StartupWarning] Running with default JWT secret. Configure JWT_SECRET in production.');
+}
 
 // Initialize express app
 const app = express();
@@ -92,7 +102,6 @@ fanNamespace.on('connection', (socket) => {
   socket.on('authenticate', (token) => {
     // Basic decode of JWT to subscribe user to their room
     try {
-      const jwt = require('jsonwebtoken');
       const decoded = jwt.verify(token, config.JWT_SECRET);
       const userId = decoded.id;
       connectedFans.set(socket.id, userId);
@@ -114,7 +123,6 @@ dashboardNamespace.on('connection', (socket) => {
 
   socket.on('authenticate', (token) => {
     try {
-      const jwt = require('jsonwebtoken');
       const decoded = jwt.verify(token, config.JWT_SECRET);
       if (decoded.role === 'staff' || decoded.role === 'admin') {
         const userId = decoded.id;
@@ -183,5 +191,25 @@ if (process.env.NODE_ENV !== 'test') {
     `);
   });
 }
+
+// Global error handling middleware (FR-01/FR-08)
+app.use((err, req, res, next) => {
+  console.error('[GlobalErrorHandler]', err.stack || err.message);
+  
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  const response = {
+    error: true,
+    message: err.message || 'Internal Server Error',
+  };
+  
+  if (process.env.NODE_ENV !== 'production') {
+    response.stack = err.stack;
+  }
+  
+  res.status(err.status || 500).json(response);
+});
 
 module.exports = { app, server };

@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Info, Bell, ShieldAlert, CheckCircle, RefreshCw, ChevronDown } from 'lucide-react';
-import { useSocket, useUnread } from '../App';
-
+import { useSocket, useUnread, useAuth } from '../App';
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const pageVariants = {
@@ -116,6 +115,7 @@ const styles = {
 export default function Alerts() {
   const socket = useSocket();
   const { setUnreadCount } = useUnread();
+  const { user, token } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -128,7 +128,11 @@ export default function Alerts() {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/api/notifications/fan1`);
+      const res = await fetch(`${API}/api/notifications/${user?.id || 'fan1'}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!res.ok) throw new Error('Fetch failed');
       const data = await res.json();
       const list = Array.isArray(data) ? data : data.notifications || [];
@@ -178,7 +182,11 @@ export default function Alerts() {
       });
     };
     socket.on('notification:fan', handler);
-    return () => { socket.off('notification:fan', handler); };
+    socket.on('notification:new', handler);
+    return () => {
+      socket.off('notification:fan', handler);
+      socket.off('notification:new', handler);
+    };
   }, [socket, computeUnread]);
 
   const handleRefresh = async () => {

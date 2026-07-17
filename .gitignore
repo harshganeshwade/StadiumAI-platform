@@ -7,3 +7,5 @@ dist/
 .vercel
 *.log
 coverage/
+hackathon_documentation.txt
+redeployment.txt

@@ -7,7 +7,7 @@
 const express = require('express');
 const router = express.Router();
 const recommendation = require('../services/recommendation');
-const db = require('../db');
+const { verifyToken } = require('../middleware/auth');
 const TTLCache = require('../utils/cache');
 
 const cache = new TTLCache(5000); // 5 seconds cache
@@ -16,7 +16,7 @@ const cache = new TTLCache(5000); // 5 seconds cache
  * GET /api/recommendations
  * Query recommendations for a user.
  */
-router.get('/', (req, res) => {
+router.get('/', verifyToken, (req, res) => {
   try {
     const { category, zone_id, user_id } = req.query;
     const cacheKey = `${category || 'any'}_${zone_id || 'any'}_${user_id || 'any'}`;

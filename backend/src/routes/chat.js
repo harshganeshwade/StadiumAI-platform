@@ -10,11 +10,13 @@ const router = express.Router();
 const chatbot = require('../services/chatbot');
 const config = require('../config');
 
+const { verifyToken } = require('../middleware/auth');
+
 /**
  * POST /api/chat
  * Handles conversational request from fan or staff.
  */
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
   let timeoutTriggered = false;
 
   // Set timeout fallback as specified in section 5
@@ -30,7 +32,9 @@ router.post('/', async (req, res) => {
   }, config.AI_MODEL_TIMEOUT_MS);
 
   try {
-    const { session_id, user_id, role, message, language, context } = req.body;
+    const { session_id, message, language, context } = req.body;
+    const user_id = req.user.id;
+    const role = req.user.role;
 
     if (!message) {
       clearTimeout(timeoutId);

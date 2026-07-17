@@ -2,9 +2,17 @@ const request = require('supertest');
 const { app, server } = require('../backend/src/index');
 const crowdAnalytics = require('../backend/src/services/crowdAnalytics');
 const recommendation = require('../backend/src/services/recommendation');
+const db = require('../backend/src/db');
+const jwt = require('jsonwebtoken');
+const config = require('../backend/src/config');
 
 describe('Crowd Density and Navigation Route Tests', () => {
+  let fanToken;
 
+  beforeAll(() => {
+    const fanUser = db.getUser('fan1@stadium.ai');
+    fanToken = jwt.sign({ id: fanUser.id, role: fanUser.role }, config.JWT_SECRET, { issuer: config.JWT_ISSUER });
+  });
 
   test('GET /api/crowd/zones - Should fetch list of all stadium zones', async () => {
     const res = await request(app).get('/api/crowd/zones');
@@ -28,6 +36,7 @@ describe('Crowd Density and Navigation Route Tests', () => {
   test('POST /api/navigate - Should return route from gate-a to vip-lounge', async () => {
     const res = await request(app)
       .post('/api/navigate')
+      .set('Authorization', `Bearer ${fanToken}`)
       .send({
         from_zone: 'gate-a',
         to_zone: 'vip-lounge'
@@ -42,6 +51,7 @@ describe('Crowd Density and Navigation Route Tests', () => {
   test('POST /api/navigate - Should fail if target zone is unknown', async () => {
     const res = await request(app)
       .post('/api/navigate')
+      .set('Authorization', `Bearer ${fanToken}`)
       .send({
         from_zone: 'gate-a',
         to_zone: 'unknown-zone'

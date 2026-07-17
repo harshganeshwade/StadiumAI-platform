@@ -45,6 +45,26 @@ const GRAPH = {
   'field':        { 'vip-lounge': 80, 'concourse-n': 90, 'concourse-s': 90 },
 };
 
+// Non-ADA compliant stair pathways (sections connecting to high seating rows)
+const STAIRS_EDGES = new Set([
+  'concourse-n->sec-101', 'sec-101->concourse-n',
+  'concourse-w->sec-101', 'sec-101->concourse-w',
+  'concourse-n->sec-102', 'sec-102->concourse-n',
+  'concourse-e->sec-102', 'sec-102->concourse-e',
+  'concourse-n->sec-103', 'sec-103->concourse-n',
+  'concourse-e->sec-103', 'sec-103->concourse-e',
+  'concourse-n->sec-104', 'sec-104->concourse-n',
+  'concourse-w->sec-104', 'sec-104->concourse-w',
+  'concourse-s->sec-105', 'sec-105->concourse-s',
+  'concourse-e->sec-105', 'sec-105->concourse-e',
+  'concourse-s->sec-106', 'sec-106->concourse-s',
+  'concourse-e->sec-106', 'sec-106->concourse-e',
+  'concourse-s->sec-107', 'sec-107->concourse-s',
+  'concourse-w->sec-107', 'sec-107->concourse-w',
+  'concourse-s->sec-108', 'sec-108->concourse-s',
+  'concourse-w->sec-108', 'sec-108->concourse-w',
+]);
+
 // ---------------------------------------------------------------------------
 // Congestion multiplier: adjusts travel time based on crowd density
 // ---------------------------------------------------------------------------
@@ -77,9 +97,14 @@ function getCongestionMultiplier(zoneId) {
  *
  * @param {string} fromZone – starting zone ID
  * @param {string} toZone – destination zone ID
- * @returns {Object} { route, estimated_time, distance, congestion_aware, degraded, zone_details }
+ * @param {string} fromZone – starting zone ID
+ * @param {string} toZone – destination zone ID
+ * @param {Object} [options={}] – extra routing options (e.g. { ada: true })
+ * @returns {Object} { route, estimated_time, distance, congestion_aware, degraded, zone_details, ada_route }
  */
-function findRoute(fromZone, toZone) {
+function findRoute(fromZone, toZone, options = {}) {
+  const adaEnabled = !!options.ada;
+
   // Validate zones exist in graph
   if (!GRAPH[fromZone]) {
     return { error: `Unknown zone: ${fromZone}`, route: [], estimated_time: 0, distance: 0, congestion_aware: false, degraded: true };
@@ -97,6 +122,7 @@ function findRoute(fromZone, toZone) {
       congestion_aware: true,
       degraded: false,
       zone_details: [{ zone_id: fromZone, congestion: 'none' }],
+      ada_route: adaEnabled
     };
   }
 
@@ -138,9 +164,19 @@ function findRoute(fromZone, toZone) {
     for (const [neighbour, baseTime] of Object.entries(neighbours)) {
       if (visited[neighbour]) continue;
 
+      // Apply accessibility penalty multiplier for stairs when ADA routing is requested
+      let accessibilityMultiplier = 1.0;
+      if (adaEnabled) {
+        const edgeKey = `${current}->${neighbour}`;
+        if (STAIRS_EDGES.has(edgeKey)) {
+          // Penalize stairways heavily to force routing via elevator/ramp accessible walkways
+          accessibilityMultiplier = 20.0;
+        }
+      }
+
       // Apply congestion multiplier if crowd data is available
       const multiplier = hasCrowdData ? getCongestionMultiplier(neighbour) : 1.0;
-      const adjustedTime = baseTime * multiplier;
+      const adjustedTime = baseTime * multiplier * accessibilityMultiplier;
 
       const newDist = dist[current] + adjustedTime;
       if (newDist < dist[neighbour]) {
@@ -167,6 +203,7 @@ function findRoute(fromZone, toZone) {
       distance: 0,
       congestion_aware: hasCrowdData,
       degraded: !hasCrowdData,
+      ada_route: adaEnabled
     };
   }
 
@@ -190,6 +227,7 @@ function findRoute(fromZone, toZone) {
     congestion_aware: hasCrowdData,
     degraded: !hasCrowdData,
     zone_details: zoneDetails,
+    ada_route: adaEnabled
   };
 }
 

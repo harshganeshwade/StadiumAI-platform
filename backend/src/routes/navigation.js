@@ -9,19 +9,23 @@ const router = express.Router();
 const recommendation = require('../services/recommendation');
 const { verifyToken } = require('../middleware/auth');
 
+const { validateBody } = require('../middleware/validator');
+
+const navigationSchema = {
+  from_zone: { required: true, type: 'string' },
+  to_zone: { required: true, type: 'string' },
+  ada: { required: false, type: 'boolean' }
+};
+
 /**
  * POST /api/navigate
  * Calculate optimal route from one zone to another.
  */
-router.post('/', verifyToken, (req, res) => {
+router.post('/', verifyToken, validateBody(navigationSchema), (req, res) => {
   try {
-    const { from_zone, to_zone } = req.body;
+    const { from_zone, to_zone, ada } = req.body;
 
-    if (!from_zone || !to_zone) {
-      return res.status(400).json({ error: 'MISSING_ZONES', message: 'from_zone and to_zone are required.' });
-    }
-
-    const routeData = recommendation.findRoute(from_zone, to_zone);
+    const routeData = recommendation.findRoute(from_zone, to_zone, { ada: !!ada });
     if (routeData.error) {
       return res.status(400).json({ error: 'ROUTING_FAILED', message: routeData.error });
     }

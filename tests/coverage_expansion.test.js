@@ -354,4 +354,39 @@ describe('Coverage Expansion & Edge Cases', () => {
       expect(res.body.zone_id).toBe('gate-a');
     });
   });
+
+  describe('5. ADA Routing & Schema Validation', () => {
+    test('POST /api/navigate - fails validation with missing zones', async () => {
+      const res = await request(app)
+        .post('/api/navigate')
+        .set('Authorization', `Bearer ${validFanToken}`)
+        .send({ from_zone: 'gate-a' }); // missing to_zone
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toBe(true);
+      expect(res.body.message).toContain('required');
+    });
+
+    test('POST /api/navigate - successfully returns route with ADA disabled', async () => {
+      const res = await request(app)
+        .post('/api/navigate')
+        .set('Authorization', `Bearer ${validFanToken}`)
+        .send({ from_zone: 'gate-a', to_zone: 'sec-101', ada: false });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.ada_route).toBe(false);
+      expect(res.body.route.length).toBeGreaterThan(0);
+    });
+
+    test('POST /api/navigate - successfully routes with ADA enabled (avoids stairs)', async () => {
+      const res = await request(app)
+        .post('/api/navigate')
+        .set('Authorization', `Bearer ${validFanToken}`)
+        .send({ from_zone: 'gate-a', to_zone: 'sec-101', ada: true });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.ada_route).toBe(true);
+      expect(res.body.route.length).toBeGreaterThan(0);
+    });
+  });
 });

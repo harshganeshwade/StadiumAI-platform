@@ -111,7 +111,17 @@ const FALLBACK_RESPONSES = {
   de: 'Ich bin nicht sicher, ob ich das verstanden habe. Geben Sie "hilfe" ein, um die verfügbaren Optionen zu sehen.',
 };
 
+const CIRCUIT_BREAKER_FALLBACKS = {
+  en: "I am experiencing high response times at the moment. Please consult our static FAQ, or contact stadium staff directly for assistance.",
+  es: "Estoy experimentando tiempos de respuesta altos en este momento. Consulte nuestras preguntas frecuentes estáticas o póngase en contacto directamente con el personal del estadio para obtener ayuda.",
+  fr: "Je rencontre actuellement des temps de réponse élevés. Veuillez consulter notre FAQ statique ou contacter directement le personnel du stade pour obtenir de l'aide.",
+  ar: "أواجه حاليًا أوقات استجابة طويلة. يرجى مراجعة الأسئلة الشائعة الثابتة الخاصة بنا، أو الاتصال بموظفي الملعب مباشرة للحصول على المساعدة.",
+  pt: "Estou enfrentando tempos de resposta altos no momento. Consulte nosso FAQ estático ou entre em contato diretamente com a equipe do estádio para obter ajuda.",
+  de: "Ich erlebe derzeit hohe Antwortzeiten. Bitte konsultieren Sie unsere statischen FAQ oder wenden Sie sich direkt an das Stadionpersonal, um Unterstützung zu erhalten.",
+};
+
 module.exports = {
   RESPONSES,
-  FALLBACK_RESPONSES
+  FALLBACK_RESPONSES,
+  CIRCUIT_BREAKER_FALLBACKS
 };

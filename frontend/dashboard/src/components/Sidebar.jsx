@@ -13,6 +13,7 @@ import {
   Edit2,
   Check,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { path: '/incidents', label: 'Incidents', icon: AlertTriangle, id: 'nav-incidents' },
   { path: '/staff', label: 'Staff', icon: UserCog, id: 'nav-staff' },
   { path: '/analytics', label: 'Analytics', icon: BarChart3, id: 'nav-analytics' },
+  { path: '/demo', label: 'AI Ops Simulator', icon: Sparkles, id: 'nav-demo' },
 ];
 
 export default function Sidebar({ collapsed, onToggle, connected, alertsCount }) {

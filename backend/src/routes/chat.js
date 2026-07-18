@@ -11,20 +11,24 @@ const chatbot = require('../services/chatbot');
 const config = require('../config');
 
 const { verifyToken } = require('../middleware/auth');
+const { validateBody } = require('../middleware/validator');
+
+const chatSchema = {
+  session_id: { required: false, type: 'string' },
+  message: { required: true, type: 'string', minLength: 1, maxLength: 500, sanitize: true },
+  language: { required: false, type: 'string' },
+  context: { required: false, type: 'object' }
+};
 
 /**
  * POST /api/chat
  * Handles conversational request from fan or staff.
  */
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, validateBody(chatSchema), async (req, res) => {
   try {
     const { session_id, message, language, context } = req.body;
     const user_id = req.user.id;
     const role = req.user.role;
-
-    if (!message) {
-      return res.status(400).json({ error: 'MISSING_MESSAGE', message: 'Message text is required.' });
-    }
 
     const request = {
       session_id: session_id || 'new-session',

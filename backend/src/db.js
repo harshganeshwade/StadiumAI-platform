@@ -179,6 +179,15 @@ const alertsById = new Map();
 const crowdDensity = new Map(); // zone_id -> CrowdDensityEvent
 const chatSessions = new Map(); // session_id -> { messages[], created_at }
 let notifications = [];
+let activeScenario = 'normal';
+
+function getActiveScenario() {
+  return activeScenario;
+}
+
+function setActiveScenario(scenario) {
+  activeScenario = scenario;
+}
 
 // Index tables for O(1) user lookups
 const usersByEmail = new Map();
@@ -301,6 +310,13 @@ function getChatSession(sessionId) {
 }
 
 function createChatSession(sessionId) {
+  // Prevent unbounded growth of chat sessions (max 100 sessions)
+  if (chatSessions.size >= 100) {
+    const oldestKey = chatSessions.keys().next().value;
+    if (oldestKey !== undefined) {
+      chatSessions.delete(oldestKey);
+    }
+  }
   const session = { messages: [], created_at: new Date().toISOString() };
   chatSessions.set(sessionId, session);
   return session;
@@ -312,9 +328,9 @@ function addChatMessage(sessionId, message) {
     session = createChatSession(sessionId);
   }
   session.messages.push(message);
-  // Keep sessions bounded (last 100 messages)
-  if (session.messages.length > 100) {
-    session.messages = session.messages.slice(-100);
+  // Keep sessions bounded (last 50 messages)
+  if (session.messages.length > 50) {
+    session.messages = session.messages.slice(-50);
   }
   return session;
 }
@@ -398,6 +414,9 @@ module.exports = {
   getZones,
   getZone,
   getZoneCapacity,
+  // Scenario
+  getActiveScenario,
+  setActiveScenario,
   // Direct access (for simulators)
   STADIUM_ZONES,
 };

@@ -78,6 +78,16 @@ function getCongestionMultiplier(zoneId) {
   const density = crowdAnalytics.getZoneDensity(zoneId);
   if (!density) return 1.0; // no data → assume normal
 
+  // Telemetry Validation: Check for null/undefined properties, NaN, or negative values
+  if (
+    !density.density_level ||
+    (density.percentage !== undefined && density.percentage !== null && (isNaN(density.percentage) || density.percentage < 0)) ||
+    (density.current_count !== undefined && density.current_count !== null && (isNaN(density.current_count) || density.current_count < 0))
+  ) {
+    console.warn(`[RecommendationService] Corrupt/invalid telemetry data for zone ${zoneId}, defaulting multiplier to 1.0`);
+    return 1.0;
+  }
+
   switch (density.density_level) {
     case 'low':      return 1.0;
     case 'medium':   return 1.3;

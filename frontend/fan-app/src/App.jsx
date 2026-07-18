@@ -22,6 +22,8 @@ const SocketContext = createContext(null);
 export const useSocket = () => useContext(SocketContext);
 
 function SocketProvider({ children }) {
+  const [isConnected, setIsConnected] = useState(true);
+
   const socket = useMemo(() => {
     return io(import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/fan` : 'http://localhost:3001/fan', {
       transports: ['websocket', 'polling'],
@@ -34,12 +36,15 @@ function SocketProvider({ children }) {
   useEffect(() => {
     socket.on('connect', () => {
       console.log('[Socket] Connected to /fan namespace:', socket.id);
+      setIsConnected(true);
     });
     socket.on('disconnect', (reason) => {
       console.log('[Socket] Disconnected:', reason);
+      setIsConnected(false);
     });
     socket.on('connect_error', (err) => {
       console.warn('[Socket] Connection error:', err.message);
+      setIsConnected(false);
     });
 
     return () => {
@@ -49,6 +54,37 @@ function SocketProvider({ children }) {
 
   return (
     <SocketContext.Provider value={socket}>
+      {!isConnected && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: '#ea4335',
+          color: '#fff',
+          textAlign: 'center',
+          padding: '10px 16px',
+          zIndex: 99999,
+          fontSize: '13px',
+          fontWeight: '600',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '8px',
+          fontFamily: 'system-ui, sans-serif'
+        }}>
+          <span style={{
+            display: 'inline-block',
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            backgroundColor: '#fff',
+            opacity: 0.8
+          }} />
+          Reconnecting to MetLife Stadium network...
+        </div>
+      )}
       {children}
     </SocketContext.Provider>
   );

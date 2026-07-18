@@ -8,6 +8,7 @@ const CrowdMap = lazy(() => import('./pages/CrowdMap'));
 const Incidents = lazy(() => import('./pages/Incidents'));
 const Staff = lazy(() => import('./pages/Staff'));
 const Analytics = lazy(() => import('./pages/Analytics'));
+const DemoCenter = lazy(() => import('./pages/DemoCenter'));
 
 const SOCKET_URL = import.meta.env.VITE_API_URL 
   ? `${import.meta.env.VITE_API_URL}/dashboard` 
@@ -150,6 +151,7 @@ export default function App() {
                 <Route path="/incidents" element={<Incidents />} />
                 <Route path="/staff" element={<Staff />} />
                 <Route path="/analytics" element={<Analytics />} />
+                <Route path="/demo" element={<DemoCenter />} />
               </Routes>
             </Suspense>
           </main>

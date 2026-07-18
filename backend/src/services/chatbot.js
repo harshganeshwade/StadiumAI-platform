@@ -13,7 +13,7 @@ const db = require('../db');
 const config = require('../config');
 const TTLCache = require('../utils/cache');
 const { CircuitBreaker } = require('./circuitBreaker');
-const { RESPONSES, FALLBACK_RESPONSES } = require('./locales');
+const { RESPONSES, FALLBACK_RESPONSES, CIRCUIT_BREAKER_FALLBACKS } = require('./locales');
 
 const chatCache = new TTLCache(10000); // 10 seconds cache
 const llmBreaker = new CircuitBreaker({
@@ -328,10 +328,18 @@ async function processMessage(request) {
     return Promise.race([workPromise, timeoutPromise]);
   }, () => {
     // Open Circuit Breaker Fallback
+    const fallbackText = CIRCUIT_BREAKER_FALLBACKS[language] || CIRCUIT_BREAKER_FALLBACKS.en;
     return {
-      responseText: "I am experiencing high response times at the moment. Please consult our static FAQ, or contact stadium staff directly for assistance.",
+      responseText: fallbackText,
       actions: [
-        { label: 'Talk to Staff', action: 'escalate_to_human' },
+        { 
+          label: language === 'es' ? 'Hablar con personal' : 
+                 language === 'fr' ? 'Parler au personnel' : 
+                 language === 'ar' ? 'التحدث مع الموظفين' : 
+                 language === 'pt' ? 'Falar com a equipe' : 
+                 language === 'de' ? 'Mit Personal sprechen' : 'Talk to Staff', 
+          action: 'escalate_to_human' 
+        },
       ],
       escalate: true,
       delay: 0,

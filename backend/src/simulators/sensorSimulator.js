@@ -47,23 +47,36 @@ function generateTick(callback) {
   
   for (const zone of zones) {
     let baseMultiplier = 0.3; // default medium-low
+    const activeScenario = db.getActiveScenario ? db.getActiveScenario() : 'normal';
 
-    // Modulate base multiplier depending on zone type and simulation phase
-    const sinPhase = Math.sin(simulationPhase); // -1 to 1
+    if (activeScenario === 'surge' && zone.zone_id === 'gate-a') {
+      baseMultiplier = 0.94;
+    } else if (activeScenario === 'surge' && zone.zone_id === 'concourse-n') {
+      baseMultiplier = 0.82;
+    } else if (activeScenario === 'fire' && zone.zone_id === 'sec-106') {
+      baseMultiplier = 0.95;
+    } else if (activeScenario === 'fire' && (zone.zone_id === 'sec-105' || zone.zone_id === 'sec-107')) {
+      baseMultiplier = 0.85;
+    } else if (activeScenario === 'fire' && zone.zone_id === 'concourse-s') {
+      baseMultiplier = 0.88;
+    } else {
+      // Modulate base multiplier depending on zone type and simulation phase
+      const sinPhase = Math.sin(simulationPhase); // -1 to 1
 
-    if (zone.type === 'gate') {
-      // Gates peak early (fans arrival) and late (fans departure)
-      baseMultiplier = 0.4 + 0.3 * Math.sin(simulationPhase * 2); // oscillates faster
-    } else if (zone.type === 'seating') {
-      // Seating sections peak when phase is in the middle (match active)
-      baseMultiplier = 0.5 + 0.4 * sinPhase; // 0.1 to 0.9
-    } else if (zone.type === 'concourse' || zone.type === 'food') {
-      // Concourses peak during arrival, halftime, and departure (inverse of seating match peak)
-      baseMultiplier = 0.4 - 0.25 * sinPhase; // 0.15 to 0.65
-    } else if (zone.type === 'vip') {
-      baseMultiplier = 0.3 + 0.15 * Math.cos(simulationPhase);
-    } else if (zone.type === 'medical') {
-      baseMultiplier = 0.05 + 0.05 * Math.random(); // medical stays low
+      if (zone.type === 'gate') {
+        // Gates peak early (fans arrival) and late (fans departure)
+        baseMultiplier = 0.4 + 0.3 * Math.sin(simulationPhase * 2); // oscillates faster
+      } else if (zone.type === 'seating') {
+        // Seating sections peak when phase is in the middle (match active)
+        baseMultiplier = 0.5 + 0.4 * sinPhase; // 0.1 to 0.9
+      } else if (zone.type === 'concourse' || zone.type === 'food') {
+        // Concourses peak during arrival, halftime, and departure (inverse of seating match peak)
+        baseMultiplier = 0.4 - 0.25 * sinPhase; // 0.15 to 0.65
+      } else if (zone.type === 'vip') {
+        baseMultiplier = 0.3 + 0.15 * Math.cos(simulationPhase);
+      } else if (zone.type === 'medical') {
+        baseMultiplier = 0.05 + 0.05 * Math.random(); // medical stays low
+      }
     }
 
     // Add some random noise

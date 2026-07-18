@@ -31,9 +31,22 @@ function validateBody(schema) {
           continue;
         }
 
-        // Check minLength
-        if (rules.minLength && typeof val === 'string' && val.length < rules.minLength) {
-          errors.push(`Field "${field}" must be at least ${rules.minLength} characters long.`);
+        // Sanitization and size limits for strings
+        if (typeof val === 'string') {
+          // Check maxLength
+          if (rules.maxLength && val.length > rules.maxLength) {
+            errors.push(`Field "${field}" must be at most ${rules.maxLength} characters long.`);
+          }
+
+          // Check minLength
+          if (rules.minLength && val.length < rules.minLength) {
+            errors.push(`Field "${field}" must be at least ${rules.minLength} characters long.`);
+          }
+
+          // Perform HTML Sanitization
+          if (rules.sanitize) {
+            req.body[field] = val.replace(/<[^>]*>/g, '');
+          }
         }
 
         // Check format (regex)

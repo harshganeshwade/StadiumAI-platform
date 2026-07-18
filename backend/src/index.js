@@ -24,6 +24,8 @@ const crowdRouter = require('./routes/crowd');
 const navigationRouter = require('./routes/navigation');
 const recommendRouter = require('./routes/recommend');
 const notifyRouter = require('./routes/notify');
+const healthRouter = require('./routes/health');
+const simulateRouter = require('./routes/simulation');
 
 // Services
 const alertEngine = require('./services/alertEngine');
@@ -65,17 +67,8 @@ app.use(express.json());
 // Apply rate limiting (Section 3.4 max concurrent users / protection)
 app.use(rateLimit({ windowMs: 60000, maxRequests: 150 }));
 
-// Health Check
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'UP',
-    timestamp: new Date().toISOString(),
-    config: {
-      ai_timeout_ms: config.AI_MODEL_TIMEOUT_MS,
-      max_concurrent_users: config.MAX_CONCURRENT_USERS
-    }
-  });
-});
+// Health Check Route
+app.use('/api/health', healthRouter);
 
 // Mount routes
 app.use('/api/auth', authRouter);
@@ -85,6 +78,7 @@ app.use('/api/crowd', crowdRouter);
 app.use('/api/navigate', navigationRouter);
 app.use('/api/recommendations', recommendRouter);
 app.use('/api/notifications', notifyRouter);
+app.use('/api/simulate', simulateRouter);
 
 // Set up Socket.IO
 const io = socketIo(server, {
